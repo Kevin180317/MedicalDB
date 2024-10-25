@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const bcrypt = require("bcrypt");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 
 const app = express();
@@ -46,6 +47,32 @@ app.get("/users", async (req, res) => {
   } catch (error) {
     console.error("Error obteniendo usuarios:", error);
     res.status(500).send("Error obteniendo usuarios");
+  }
+});
+
+app.post("/create/user", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).send("Name, email, and password are required");
+    }
+
+    // Hashear la contraseña
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const database = client.db("medicaldb");
+    const users = database.collection("users");
+
+    const newUser = { name, email, password: hashedPassword };
+    const result = await users.insertOne(newUser);
+
+    res.status(201).json({
+      message: "User created successfully",
+      userId: result.insertedId,
+    });
+  } catch (error) {
+    console.error("Error creando usuario:", error);
+    res.status(500).send("Error creando usuario");
   }
 });
 
